@@ -10,6 +10,9 @@ The kit shows:
 - **Key dates** still ahead, each with a countdown, and an **Add to calendar** button that downloads them as an `.ics` file.
 - **Who to contact**, and reference material for the next project (the items the sponsor picked come first and open).
 - **Copy link** (the link holds no names or emails) and **Print or save as PDF**, which opens every section first; the printout carries the date and the link to reopen the kit.
+- Sharing and tools: **Email this to my PM** on each action, **Copy my action list**, **Clear all ticks**, **Hide finished**, **Add to calendar** per date, **Expand all**, **Copy text** on reference items and **Copy** next to emails.
+- **Updated since your last visit**: when the guide content (`readiness.json`) changes, a returning sponsor sees which actions, dates or items changed. Only a fingerprint of the content is stored, never answers.
+- A **light/dark button** (stored as `njit-sponsor-theme`, which the survey site can read too, since both share the slyguy7.github.io origin) and a **link preview card** (`assets/og.png`) for Teams, Slack and email.
 
 It uses the survey's fonts (self-hosted in `assets/fonts/`) and colours, follows the system's light or dark mode, and works down to a 320px-wide phone.
 
