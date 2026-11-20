@@ -2,9 +2,13 @@ name: Tests
 
 # Runs on every push and pull request. GitHub Pages publishes the branch regardless of the result,
 # so check the green tick (or the Actions tab) before sharing a new version of the kit.
+# It also runs every Monday, so the survey-sync check notices when the live survey changes.
 on:
   push:
   pull_request:
+  schedule:
+    - cron: '0 13 * * 1'
+  workflow_dispatch:
 
 jobs:
   test:
@@ -24,3 +28,15 @@ jobs:
       - name: Browser tests
         if: ${{ !cancelled() }}
         run: npm run test:ui
+
+  # Fails when assets/survey.json or assets/readiness.json no longer match the live survey site,
+  # which means links from the survey would be decoded wrong. Fix: copy the files across (see README).
+  survey-sync:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - run: npm run check:sync

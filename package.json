@@ -7,10 +7,11 @@
     "serve": "node serve.js 4173",
     "test": "node --test tests/engine.test.js && playwright test",
     "test:ui": "playwright test",
-    "test:script": "node --test tests/engine.test.js"
+    "test:script": "node --test tests/engine.test.js",
+    "check:sync": "node check-sync.js"
   },
   "devDependencies": {
-    "@axe-core/playwright": "4.10.2",
-    "@playwright/test": "1.63.0"
+    "@axe-core/playwright": "4.14.0",
+    "@playwright/test": "1.65.1"
   }
 }
