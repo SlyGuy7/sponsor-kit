@@ -29,8 +29,10 @@ http
       res.writeHead(400).end('Bad request');
       return;
     }
+    // Also answer under /sponsor-kit/, the path GitHub Pages uses, so absolute links work locally.
+    if (rel === '/sponsor-kit' || rel.startsWith('/sponsor-kit/')) rel = rel.slice('/sponsor-kit'.length) || '/';
     let file = path.join(root, rel);
-    if (!file.startsWith(root)) {
+    if (file !== root && !file.startsWith(root + path.sep)) {
       res.writeHead(403).end('Forbidden');
       return;
     }
