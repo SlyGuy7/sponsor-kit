@@ -42,7 +42,8 @@ http
         res.writeHead(404, { 'Content-Type': 'text/plain' }).end('Not found');
         return;
       }
-      res.writeHead(200, { 'Content-Type': types[path.extname(file)] || 'application/octet-stream' });
+      // no-store: a local preview always shows the files as they are on disk, never a cached older copy.
+      res.writeHead(200, { 'Content-Type': types[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-store' });
       res.end(data);
     });
   })

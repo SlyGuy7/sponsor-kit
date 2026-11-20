@@ -100,11 +100,12 @@ h3{font-family:var(--display);font-weight:700;font-size:1.1875rem;line-height:1.
 .src{font-size:.8125rem;color:var(--muted)}
 
 /* ---------- small actions: links and text buttons under steps, dates and contacts ---------- */
-.step-f{display:flex;justify-content:space-between;align-items:center;gap:4px 16px;flex-wrap:wrap;margin-top:10px}
-.mini,.mini-btn{display:inline-flex;align-items:center;min-height:44px;padding:0;border:0;background:none;font:inherit;font-size:.875rem;font-weight:600;color:var(--heading);text-decoration:underline;text-decoration-color:var(--line-strong);text-underline-offset:4px;cursor:pointer}
-.mini:hover,.mini-btn:hover{color:var(--red-text);text-decoration-color:currentColor}
-.mini-btn:disabled{color:var(--muted);text-decoration:none;cursor:default}
-.row-tools{display:flex;gap:4px 24px;flex-wrap:wrap;margin-top:8px;padding-top:4px;border-top:1px solid var(--line)}
+.step-f{display:flex;justify-content:space-between;align-items:center;gap:8px 16px;flex-wrap:wrap;margin-top:12px}
+.mini,.mini-btn{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:6px 14px;border:1.5px solid var(--line-strong);border-radius:8px;background:var(--surface);font:inherit;font-size:.875rem;font-weight:600;line-height:1.2;color:var(--heading);text-decoration:none;cursor:pointer;white-space:nowrap}
+.mini:hover,.mini-btn:hover{border-color:var(--heading);background:var(--mist)}
+.mini-btn:disabled{opacity:.45;cursor:default}
+.mini-btn:disabled:hover{border-color:var(--line-strong);background:var(--surface)}
+.row-tools{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;padding-top:16px;border-top:1px solid var(--line)}
 .hide-done .step[data-status="done"]{display:none}
 .alldone{margin-bottom:20px;padding:14px 18px;border-radius:10px;background:var(--ok-bg);color:var(--ok);font-weight:600;max-width:72ch}
 .upd{display:inline-block;font-family:var(--body);font-size:.6875rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border-radius:99px;background:var(--doing-bg);color:var(--heading);margin-left:8px;vertical-align:2px}
@@ -112,9 +113,9 @@ h3{font-family:var(--display);font-weight:700;font-size:1.1875rem;line-height:1.
 .news-k{font-family:var(--display);font-weight:700;color:var(--heading);font-size:1.0625rem}
 .news p{color:var(--text)}
 .news ul{margin-top:6px;padding-left:20px;color:var(--text)}
-.mail-row{display:flex;align-items:center;gap:4px 14px;flex-wrap:wrap;margin-top:auto}
+.mail-row{display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap;margin-top:auto;padding-top:8px}
 .mail-row .mail{margin-top:0;padding-top:0}
-.dt-f{margin-top:-4px}
+.dt-f{margin-top:10px}
 .dt-h .upd{margin:0 auto 0 -4px}
 .totop{position:fixed;right:20px;bottom:20px;z-index:15;min-height:44px;padding:10px 16px;border-radius:99px;border:1px solid var(--line-strong);background:var(--surface);color:var(--heading);font:inherit;font-size:.875rem;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(18,13,69,.12);opacity:0;visibility:hidden;transform:translateY(8px);transition:opacity .2s,transform .2s,visibility .2s}
 .totop.on{opacity:1;visibility:visible;transform:none}

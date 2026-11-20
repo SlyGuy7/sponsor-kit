@@ -352,6 +352,15 @@ test('link previews: title, description and a 1200x630 image', async ({ page, re
   expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([1200, 630]);
 });
 
+test('every script and stylesheet carries the same ?v= version, so browsers never mix old and new files', async () => {
+  const html = require('fs').readFileSync(require('path').join(__dirname, '..', 'index.html'), 'utf8');
+  const refs = [...html.matchAll(/(?:src|href)="(assets\/[^"]+\.(?:js|css)[^"]*)"/g)].map(m => m[1]);
+  expect(refs.length).toBe(4);
+  const versions = new Set(refs.map(r => (/\?v=(\d+)$/.exec(r) || [])[1]));
+  expect([...versions].every(Boolean)).toBe(true);
+  expect(versions.size).toBe(1);
+});
+
 test('the skip link jumps to the kit', async ({ page }) => {
   await open(page);
   await page.keyboard.press('Tab');
