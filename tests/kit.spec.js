@@ -12,6 +12,7 @@ const SAMPLE = {
   q14: 'I needed help but didn’t know whom to contact', q16: '2', q19: '4',
   q18: 'A scope document template to sign with the Project Manager | A named Operations contact and instructions for getting help'
 };
+const axe = async page => (await new AxeBuilder({ page }).analyze()).violations.map(v => v.id + ': ' + v.help + ' ' + v.nodes.map(n => n.target).join(', '));
 
 async function open(page, a = SAMPLE) {
   await page.clock.setFixedTime(TODAY);
@@ -22,14 +23,21 @@ async function open(page, a = SAMPLE) {
 test('a link builds the kit: three priority actions, dates, contact, and next-project reference', async ({ page }) => {
   await open(page);
   await expect(page.locator('h1')).toHaveText('Your readiness kit');
-  await expect(page.locator('#acts .act')).toHaveCount(3);
-  await expect(page.locator('#acts .act').first()).toContainText('Sign the scope document');
-  await expect(page.locator('#sum')).toContainText('dates ahead');
+  await expect(page.locator('#acts .step')).toHaveCount(3);
+  await expect(page.locator('#acts .step').first()).toContainText('Sign the scope document');
+  await expect(page.locator('#acts .step').first()).toHaveAttribute('data-n', '1');
   await expect(page.locator('#dateList li')).toHaveCount(4);                       // Sprint 4 (last day), Sprint 5, Showcase, evaluation
   await expect(page.locator('#dateList li').first()).toHaveClass(/next/);
   await expect(page.locator('#contactList')).toContainText('osama.eljabiri@njit.edu');
   await expect(page.locator('#next details.item').first()).toHaveAttribute('open', '');
   await expect(page.locator('body')).not.toContainText('danello');
+});
+
+test('the rest of the actions continue the numbering under "More for this semester"', async ({ page }) => {
+  await open(page);
+  const total = await page.locator('.step').count();
+  await expect(page.locator('#moreSum')).toHaveText('More for this semester (' + (total - 3) + ')');
+  await expect(page.locator('#more .step').first()).toHaveAttribute('data-n', '4');
 });
 
 test('items the sponsor picked come first, open, and are marked', async ({ page }) => {
@@ -43,8 +51,44 @@ test('items the sponsor picked come first, open, and are marked', async ({ page 
 test('a sponsor with nothing wrong still gets a useful kit', async ({ page }) => {
   await open(page, { q4: '4 or more', q14: '5', q16: '5', q19: '5' });
   await expect(page.locator('#subActions')).toContainText('Nothing urgent');
-  await expect(page.locator('#sum')).toContainText('0');
+  await expect(page.locator('#fixNum')).toHaveText('0');
   await expect(page.locator('#nextList details.item').first()).toBeVisible();
+});
+
+test('ticking steps updates the status, the progress and survives a reload', async ({ page }) => {
+  await open(page);
+  const step = page.locator('#acts .step').first(), boxes = step.locator('.checks input');
+  const n = await page.locator('.checks input').count();
+  await expect(page.locator('#progNum')).toHaveText('0 of ' + n);
+  await expect(step.locator('.status')).toHaveText('To do');
+  await boxes.first().check();
+  await expect(step.locator('.status')).toHaveText('In progress');
+  await expect(page.locator('#progNum')).toHaveText('1 of ' + n);
+  for (const b of await boxes.all()) await b.check();
+  await expect(step).toHaveAttribute('data-status', 'done');
+  await expect(step.locator('.status')).toHaveText('Done');
+  await page.reload();
+  await expect(page.locator('#kit')).toBeVisible();
+  await expect(page.locator('#acts .step').first()).toHaveAttribute('data-status', 'done');
+  // a different kit link has its own ticks
+  await page.goto('about:blank');
+  await page.goto(link({ q8_r2: 'Still not ready' }));
+  await expect(page.locator('#kit')).toBeVisible();
+  await expect(page.locator('#acts .step').first()).toHaveAttribute('data-status', 'todo');
+});
+
+test('clicking a step\'s text ticks its box', async ({ page }) => {
+  await open(page);
+  await page.locator('#acts .checks label').first().click();
+  await expect(page.locator('#acts .checks input').first()).toBeChecked();
+});
+
+test('dates count down, and the header shows the next one', async ({ page }) => {
+  await open(page);
+  await expect(page.locator('#dateList .left')).toHaveText(['Today', 'In 14 days', 'In 16 days', 'In 24 days']);
+  await expect(page.locator('#nextWhen')).toHaveText('Today');
+  await expect(page.locator('#nextWhat')).toHaveText('Sprint 4');
+  await expect(page.locator('#dateList li').nth(2).locator('.cal')).toHaveText('Dec5');
 });
 
 test('after the last date the kit says the milestones have passed', async ({ page }) => {
@@ -52,6 +96,30 @@ test('after the last date the kit says the milestones have passed', async ({ pag
   await page.goto(link(SAMPLE));
   await expect(page.locator('#noDates')).toBeVisible();
   await expect(page.locator('#dateList')).toBeHidden();
+  await expect(page.locator('#ics')).toBeHidden();
+});
+
+test('Add to calendar downloads a valid calendar file with the dates ahead', async ({ page }) => {
+  await open(page);
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#ics')]);
+  expect(dl.suggestedFilename()).toBe('capstone-sponsor-dates.ics');
+  const text = require('fs').readFileSync(await dl.path(), 'utf8');
+  expect(text.startsWith('BEGIN:VCALENDAR\r\n')).toBe(true);
+  expect(text.trim().endsWith('END:VCALENDAR')).toBe(true);
+  expect(text.match(/BEGIN:VEVENT/g)).toHaveLength(4);
+  expect(text).toContain('DTSTART;VALUE=DATE:20261205');
+  expect(text).toContain('DTEND;VALUE=DATE:20261206');
+  expect(text).toContain('SUMMARY:Capstone: Final Capstone Showcase');
+  for (const line of text.split('\r\n')) expect(line.length).toBeLessThanOrEqual(75);
+  await expect(page.locator('#toast')).toContainText('Calendar file downloaded');
+});
+
+test('Copy link copies the kit link and says so', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await open(page);
+  await page.click('#copy');
+  await expect(page.locator('#toast')).toContainText('Link copied');
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(page.url());
 });
 
 test('no link, or a damaged one, explains itself and offers the survey', async ({ page }) => {
@@ -59,7 +127,9 @@ test('no link, or a damaged one, explains itself and offers the survey', async (
     await page.goto('/index.html' + h);
     await expect(page.locator('#err')).toContainText('missing or damaged');
     await expect(page.locator('#kit')).toBeHidden();
+    await expect(page.locator('#sum')).toBeHidden();
     await expect(page.locator('#print')).toBeHidden();
+    await expect(page.locator('#copy')).toBeHidden();
     await expect(page.locator('#again')).toHaveAttribute('href', 'https://slyguy7.github.io/sponsor-survey/');
   }
 });
@@ -68,6 +138,7 @@ test('nothing is sent anywhere: the page only reads its own files', async ({ pag
   const outside = [], reqs = [];
   page.on('request', r => { reqs.push(r.method() + ' ' + new URL(r.url()).pathname); if (!/^http:\/\/127\.0\.0\.1/.test(r.url())) outside.push(r.url()); });
   await open(page);
+  await page.locator('.checks input').first().check();
   expect(outside).toEqual([]);
   expect(reqs.filter(r => !r.startsWith('GET '))).toEqual([]);
 });
@@ -84,6 +155,16 @@ test('Print opens every section first, then closes them again', async ({ page })
   await page.click('#print');
   expect(await page.evaluate(() => window.__state)).toBe(true);
   expect(await page.locator('#moreWrap').evaluate(d => d.open)).toBe(false);
+});
+
+test('printouts carry the date and the link to reopen the kit, without buttons', async ({ page }) => {
+  await open(page);
+  await expect(page.locator('#printed')).toBeHidden();
+  await expect(page.locator('#printed')).toContainText('#kit=1_');
+  await page.emulateMedia({ media: 'print' });
+  await expect(page.locator('#printed')).toBeVisible();
+  await expect(page.locator('#printed')).toContainText('Prepared November 19, 2026');
+  for (const s of ['#print', '#copy', '#ics', '.side']) await expect(page.locator(s)).toBeHidden();
 });
 
 test('side links move to each section and mark the current one', async ({ page }) => {
@@ -106,24 +187,16 @@ test('the kit link stays in the address after using the side links, so a reload 
 
 test('pasting a different kit link rebuilds the page', async ({ page }) => {
   await open(page);
-  await expect(page.locator('#acts .act').first()).toContainText('Sign the scope document');
+  await expect(page.locator('#acts .step').first()).toContainText('Sign the scope document');
   await page.evaluate(h => { location.hash = h; }, '#kit=' + R.encode(S.questions, { q8_r4: 'Still not ready' }));
-  await expect(page.locator('#acts .act').first()).toContainText('Get data and documents');
+  await expect(page.locator('#acts .step').first()).toContainText('Get data and documents');
 });
 
-test('printouts carry the date and the link to reopen the kit; the stamp is hidden on screen', async ({ page }) => {
+test('the skip link jumps to the kit', async ({ page }) => {
   await open(page);
-  await expect(page.locator('#printed')).toBeHidden();
-  await expect(page.locator('#printed')).toContainText('#kit=1_');
-  await page.emulateMedia({ media: 'print' });
-  await expect(page.locator('#printed')).toBeVisible();
-  await expect(page.locator('#printed')).toContainText('Prepared November 19, 2026');
-});
-
-test('every priority action gets its own icon, not the fallback', async ({ page }) => {
-  await open(page, { q8_r7: 'Still not ready' });
-  await expect(page.locator('#acts .act').first()).toContainText('technical contact');
-  await expect(page.locator('#acts .act').first().locator('svg circle')).toHaveCount(1);   // person icon, not the check-mark fallback
+  await page.keyboard.press('Tab');
+  await expect(page.locator('.skip')).toBeFocused();
+  await expect(page.locator('.skip')).toBeInViewport();
 });
 
 for (const [w, h] of [[320, 640], [375, 812], [768, 1024], [1280, 800], [1920, 1080]]) {
@@ -132,40 +205,50 @@ for (const [w, h] of [[320, 640], [375, 812], [768, 1024], [1280, 800], [1920, 1
     await open(page);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
     await expect(page.locator('#print')).toBeVisible();
+    await expect(page.locator('#copy')).toBeVisible();
     await expect(page.locator('.side a').first()).toBeVisible();
   });
 }
 
-test('the kit passes the accessibility scan', async ({ page }) => {
+test('the kit passes the accessibility scan, with the extra sections open', async ({ page }) => {
   await open(page);
-  const r = await new AxeBuilder({ page }).analyze();
-  expect(r.violations.map(v => v.id + ': ' + v.help)).toEqual([]);
+  await page.locator('#acts .checks input').first().check();
+  await page.locator('#moreWrap summary').click();
+  expect(await axe(page)).toEqual([]);
+});
+
+test('the kit passes the accessibility scan in dark mode and on a phone', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.setViewportSize({ width: 375, height: 812 });
+  await open(page);
+  await page.locator('#acts .checks input').first().check();
+  expect(await axe(page)).toEqual([]);
 });
 
 test('the missing-link page passes the accessibility scan', async ({ page }) => {
   await page.goto('/index.html');
   await expect(page.locator('#err')).toBeVisible();
-  const r = await new AxeBuilder({ page }).analyze();
-  expect(r.violations.map(v => v.id + ': ' + v.help)).toEqual([]);
+  expect(await axe(page)).toEqual([]);
 });
 
 test('the 404 page is styled, accessible and leads to the survey', async ({ page }) => {
   await page.goto('/sponsor-kit/404.html');
   await expect(page.locator('h1')).toHaveText('That page does not exist');
-  await expect(page.locator('.bar')).toHaveCSS('background-color', 'rgb(7, 29, 73)');   // kit.css loaded from the Pages path
+  await expect(page.locator('.hero')).toHaveCSS('background-color', 'rgb(28, 20, 117)');   // kit.css loaded from the Pages path
   await expect(page.locator('a.btn')).toHaveAttribute('href', 'https://slyguy7.github.io/sponsor-survey/');
-  const r = await new AxeBuilder({ page }).analyze();
-  expect(r.violations.map(v => v.id + ': ' + v.help)).toEqual([]);
+  expect(await axe(page)).toEqual([]);
 });
 
-test('page basics: noindex, strict CSP, no inline scripts or styles, no px font sizes', async ({ page }) => {
-  await page.goto('/index.html');
+test('page basics: noindex, strict CSP, self-hosted fonts, no inline scripts or styles, no px font sizes', async ({ page }) => {
+  await open(page);
+  await page.locator('.checks input').first().check();
   await expect(page.locator('meta[name=robots]')).toHaveAttribute('content', 'noindex,nofollow');
   const csp = await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute('content');
   expect(csp).toContain("script-src 'self'");
-  expect(csp).toContain("connect-src 'self'");
+  expect(csp).toContain("font-src 'self'");
   expect(csp).not.toMatch(/unsafe-inline|unsafe-eval/);
   expect(await page.locator('script:not([src])').count()).toBe(0);
   expect(await page.locator('[style]').count()).toBe(0);
+  expect(await page.evaluate(async () => { await document.fonts.ready; return document.fonts.check('700 1rem "Bricolage Grotesque"') && document.fonts.check('400 1rem "Instrument Sans"'); })).toBe(true);
   expect(require('fs').readFileSync(require('path').join(__dirname, '..', 'assets', 'kit.css'), 'utf8')).not.toMatch(/font-size:\s*[\d.]+px/);
 });

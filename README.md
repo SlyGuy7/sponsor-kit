@@ -4,7 +4,14 @@ A static page that builds a sponsor's readiness kit from their answers to the Sp
 
 The sponsor's answers arrive as short option codes after the `#` in the address, for example `https://slyguy7.github.io/sponsor-kit/#kit=1_4-0_5-0123450...`. Browsers never send that part to a server, and the codes contain no names, emails or free text. The page decodes them, builds the kit in the browser and sends nothing anywhere. Without a valid link the page explains that and links back to the survey.
 
-The kit shows the priority actions the answers point to, the dates still ahead, who to contact, and reference material for the next project (the items the sponsor picked come first). The **Print or save as PDF** button opens every section first, and the printout carries the date and the link to reopen the kit.
+The kit shows:
+
+- **Priority actions** as numbered steps. Each step has tick boxes, a To do / In progress / Done status, and the header shows overall progress. Ticks are saved only in that browser (localStorage, one set per kit link) and are never sent anywhere.
+- **Key dates** still ahead, each with a countdown, and an **Add to calendar** button that downloads them as an `.ics` file.
+- **Who to contact**, and reference material for the next project (the items the sponsor picked come first and open).
+- **Copy link** (the link holds no names or emails) and **Print or save as PDF**, which opens every section first; the printout carries the date and the link to reopen the kit.
+
+It uses the survey's fonts (self-hosted in `assets/fonts/`) and colours, follows the system's light or dark mode, and works down to a 320px-wide phone.
 
 ## Files
 
