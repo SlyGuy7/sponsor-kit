@@ -124,7 +124,13 @@ h3{font-family:var(--display);font-weight:700;font-size:1.1875rem;line-height:1.
 .checks li.pop{animation:pop .8s ease-out}
 .checks li.pop input{animation:tick .25s ease-out}
 @keyframes tick{0%{transform:scale(.7)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
-.printed{display:none}
+.printbox{display:none}
+
+/* ---------- Showcase banner (two days before, through the day itself) ---------- */
+.event{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:40px;padding:20px 22px;border:1px solid var(--red);border-left-width:6px;border-radius:10px;background:var(--soft-red)}
+.event-k{font-size:.8125rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--red-text)}
+.event-t{font-family:var(--display);font-weight:800;font-size:clamp(1.375rem,3vw,1.75rem);line-height:1.15;color:var(--heading);margin:2px 0 4px}
+.event-d{color:var(--text);max-width:62ch}
 .empty{color:var(--muted)}
 
 /* ---------- priority actions: numbered steps joined by a line ---------- */
@@ -248,7 +254,11 @@ blockquote{margin:6px 0 10px;padding:14px 18px;border-left:3px solid var(--blue)
   .sum{border-top-color:#ccc;margin-top:16px}
   .stat{border-left-color:#ccc}
   .shell{display:block;padding-top:16px}
-  .printed{display:block;margin-bottom:20px;font-size:.75rem;color:#444;overflow-wrap:anywhere}
+  .printbox{display:flex;align-items:center;gap:16px;margin-bottom:20px;break-inside:avoid-page}
+  .print-qr svg{display:block;width:28mm;height:28mm}
+  .printed{margin:0;font-size:.75rem;color:#444;overflow-wrap:anywhere}
+  .event{border-left-width:4px;background:#fff}
+  #eventIcs{display:none}
   section{margin-bottom:28px}
   .step,.dates li,.people li,details.item,.checks li{break-inside:avoid-page}
   h2,h3,.sec-head{break-after:avoid}

@@ -355,10 +355,82 @@ test('link previews: title, description and a 1200x630 image', async ({ page, re
 test('every script and stylesheet carries the same ?v= version, so browsers never mix old and new files', async () => {
   const html = require('fs').readFileSync(require('path').join(__dirname, '..', 'index.html'), 'utf8');
   const refs = [...html.matchAll(/(?:src|href)="(assets\/[^"]+\.(?:js|css)[^"]*)"/g)].map(m => m[1]);
-  expect(refs.length).toBe(4);
+  expect(refs.length).toBe(5);
   const versions = new Set(refs.map(r => (/\?v=(\d+)$/.exec(r) || [])[1]));
   expect([...versions].every(Boolean)).toBe(true);
   expect(versions.size).toBe(1);
+});
+
+for (const [day, label] of [['2026-12-03', 'In 2 days'], ['2026-12-04', 'Tomorrow'], ['2026-12-05', 'Today']]) {
+  test(`Showcase banner on ${day}: "${label}", with time, place and a calendar button`, async ({ page }) => {
+    await page.clock.setFixedTime(new Date(day + 'T09:00:00'));
+    await page.goto(link(SAMPLE));
+    await expect(page.locator('#event')).toBeVisible();
+    await expect(page.locator('#eventWhen')).toHaveText(label);
+    await expect(page.locator('#eventTitle')).toHaveText('Final Capstone Showcase');
+    await expect(page.locator('#eventTime')).toHaveText('Sat, Dec. 5, 11:00 AM to 7:00 PM');
+    await expect(page.locator('#eventDetail')).toContainText('Campus Center Ballroom');
+    const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#eventIcs')]);
+    expect(dl.suggestedFilename()).toBe('capstone-final-capstone-showcase.ics');
+  });
+}
+
+test('no Showcase banner earlier, or after the day', async ({ page }) => {
+  for (const day of ['2026-11-19', '2026-12-02', '2026-12-06']) {
+    await page.clock.setFixedTime(new Date(day + 'T09:00:00'));
+    await page.goto('about:blank');
+    await page.goto(link(SAMPLE));
+    await expect(page.locator('#kit')).toBeVisible();
+    await expect(page.locator('#event')).toBeHidden();
+  }
+});
+
+test('the printout carries a QR code of the kit link; it is hidden on screen', async ({ page }) => {
+  await open(page);
+  const qr = page.locator('#printQr svg');
+  await expect(qr).toHaveCount(1);
+  await expect(qr).toBeHidden();
+  await expect(qr).toHaveAttribute('aria-label', 'QR code that opens this kit');
+  // the drawing matches the encoder's grid for this exact address (quiet zone of 4)
+  const Q = require('../assets/qr.js');
+  const n = Q.encode(page.url()).length;
+  await expect(qr).toHaveAttribute('viewBox', `0 0 ${n + 8} ${n + 8}`);
+  const dark = Q.encode(page.url()).flat().filter(Boolean).length;
+  expect((await qr.locator('path').getAttribute('d')).match(/M/g)).toHaveLength(dark);
+  await page.emulateMedia({ media: 'print' });
+  await expect(qr).toBeVisible();
+  await expect(page.locator('#printed')).toContainText('Scan the code');
+});
+
+test('on a touch device with a share sheet, Share replaces Copy link', async ({ browser }) => {
+  const ctx = await browser.newContext({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } });
+  await ctx.addInitScript(() => { window.__shared = null; navigator.share = d => { window.__shared = d; return Promise.resolve(); }; });
+  const page = await ctx.newPage();
+  await open(page);
+  await expect(page.locator('#share')).toBeVisible();
+  await expect(page.locator('#copy')).toBeHidden();
+  await page.click('#share');
+  const shared = await page.evaluate(() => window.__shared);
+  expect(shared.url).toBe(page.url());
+  expect(shared.title).toBe('My sponsor readiness kit');
+  await ctx.close();
+});
+
+test('if sharing fails, the link is copied instead; cancelling does nothing', async ({ browser }) => {
+  const ctx = await browser.newContext({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } });
+  await ctx.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await ctx.addInitScript(() => { navigator.share = () => Promise.reject(new DOMException(window.__cancel ? 'x' : 'blocked', window.__cancel ? 'AbortError' : 'NotAllowedError')); });
+  const page = await ctx.newPage();
+  await open(page);
+  await page.click('#share');
+  await expect(page.locator('#toast')).toContainText('link was copied instead');
+  await ctx.close();
+});
+
+test('on a desktop there is no Share button, only Copy link', async ({ page }) => {
+  await open(page);
+  await expect(page.locator('#share')).toBeHidden();
+  await expect(page.locator('#copy')).toBeVisible();
 });
 
 test('the skip link jumps to the kit', async ({ page }) => {

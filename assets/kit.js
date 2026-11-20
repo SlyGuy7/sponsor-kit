@@ -145,6 +145,39 @@ function whatsNew(r, prio) {
   });
 }
 
+/* ---------- QR code for the printout (drawn by assets/qr.js, nothing fetched) ---------- */
+function qrSvg(text) {
+  const NS = 'http://www.w3.org/2000/svg', m = QR.encode(text), n = m.length, q = 4;
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 ' + (n + 2 * q) + ' ' + (n + 2 * q));
+  svg.setAttribute('shape-rendering', 'crispEdges');
+  svg.setAttribute('role', 'img');
+  svg.setAttribute('aria-label', 'QR code that opens this kit');
+  const bg = document.createElementNS(NS, 'rect');
+  bg.setAttribute('width', String(n + 2 * q)); bg.setAttribute('height', String(n + 2 * q)); bg.setAttribute('fill', '#fff');
+  let d = '';
+  m.forEach((row, y) => row.forEach((dark, x) => { if (dark) d += 'M' + (x + q) + ' ' + (y + q) + 'h1v1h-1z'; }));
+  const path = document.createElementNS(NS, 'path');
+  path.setAttribute('d', d); path.setAttribute('fill', '#000');
+  svg.append(bg, path);
+  return svg;
+}
+
+// In the two days before the Showcase, a banner at the top with when and where.
+function eventBanner(r, today) {
+  const ev = r.dates.find(d => /showcase/i.test(d.title) && !/prep/i.test(d.title));
+  if (!ev) return;
+  const left = daysUntil(ev.until, today);
+  if (left < 0 || left > 2) return;
+  $('#eventWhen').textContent = left === 0 ? 'Today' : left === 1 ? 'Tomorrow' : 'In 2 days';
+  $('#eventTitle').textContent = ev.title;
+  $('#eventTime').textContent = ev.when;
+  $('#eventDetail').textContent = ev.detail;
+  $('#eventIcs').setAttribute('aria-label', 'Add to calendar: ' + ev.title);
+  $('#eventIcs').addEventListener('click', () => { download('capstone-' + slug(ev.title) + '.ics', icsFile([ev])); toast('Calendar file downloaded. Open it to add "' + ev.title + '".'); });
+  $('#event').hidden = false;
+}
+
 /* ---------- rendering ---------- */
 function contactRows(contacts) {
   return contacts.map(c => el('li', null,
@@ -287,10 +320,12 @@ function render(r, today) {
   $('#kit').addEventListener('click', e => { const b = e.target.closest('[data-copy]'); if (b) copy(b.dataset.copy, b.dataset.copy + ' copied.'); });
 
   $('#lede').textContent = 'Prepared from your survey responses and the Capstone Sponsor Guide: what to act on first, the dates still ahead, and who to contact.';
-  $('#printed').textContent = 'Prepared ' + today.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) + '. Reopen this kit at ' + location.href;
+  $('#printed').textContent = 'Prepared ' + today.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) + '. Scan the code, or open ' + location.href + ', to reopen this kit.';
+  try { $('#printQr').append(qrSvg(location.href)); } catch (e) { /* link too long for a code: the printed address still works */ }
   refreshProgress();
   whatsNew(r, prio);
-  ['#kit', '#side', '#sum', '#print', '#copy'].forEach(s => { $(s).hidden = false; });
+  eventBanner(r, today);
+  ['#kit', '#side', '#sum', '#print', canShare() ? '#share' : '#copy'].forEach(s => { $(s).hidden = false; });
 }
 
 function fail(msg) { $('.hero').classList.add('full'); $('#lede').hidden = true; $('#err').textContent = msg; $('#err').hidden = false; $('#again').hidden = false; }
@@ -336,6 +371,12 @@ $('#print').addEventListener('click', () => {
   window.print();
 });
 $('#copy').addEventListener('click', () => copy(location.href, 'Link copied. It holds no names or emails, so it is safe to share.'));
+// On phones and tablets, Share opens the device's own share sheet (Messages, WhatsApp, Teams...) in place of Copy link.
+const canShare = () => typeof navigator.share === 'function' && matchMedia('(pointer: coarse)').matches;
+$('#share').addEventListener('click', () => {
+  navigator.share({ title: 'My sponsor readiness kit', text: 'My NJIT Capstone sponsor readiness kit', url: location.href })
+    .catch(e => { if (e && e.name !== 'AbortError') copy(location.href, 'Sharing is not available, so the link was copied instead.'); });
+});
 
 // Light or dark: the button overrides the system setting and remembers the choice.
 // The key is shared with the survey site (same origin), so one choice can cover both.

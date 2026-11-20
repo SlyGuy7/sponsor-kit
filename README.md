@@ -7,10 +7,10 @@ The sponsor's answers arrive as short option codes after the `#` in the address,
 The kit shows:
 
 - **Priority actions** as numbered steps. Each step has tick boxes, a To do / In progress / Done status, and the header shows overall progress. Ticks are saved only in that browser (localStorage, one set per kit link) and are never sent anywhere.
-- **Key dates** still ahead, each with a countdown, and an **Add to calendar** button that downloads them as an `.ics` file.
+- **Key dates** still ahead, each with a countdown, and **Add to calendar** buttons that download `.ics` files. In the two days before the Final Capstone Showcase, a banner at the top gives its time and place.
 - **Who to contact**, and reference material for the next project (the items the sponsor picked come first and open).
-- **Copy link** (the link holds no names or emails) and **Print or save as PDF**, which opens every section first; the printout carries the date and the link to reopen the kit.
-- Sharing and tools: **Email this to my PM** on each action, **Copy my action list**, **Clear all ticks**, **Hide finished**, **Add to calendar** per date, **Expand all**, **Copy text** on reference items and **Copy** next to emails.
+- **Copy link** (on phones and tablets, **Share**, which opens the device's share sheet) and **Print or save as PDF**, which opens every section first. The printout carries the date, the link and a QR code that reopens the kit on a phone.
+- Sharing and tools: **Email this to my PM** on each action, **Copy my action list**, **Clear all ticks**, **Hide finished**, **Expand all**, **Copy text** on reference items and **Copy** next to emails.
 - **Updated since your last visit**: when the guide content (`readiness.json`) changes, a returning sponsor sees which actions, dates or items changed. Only a fingerprint of the content is stored, never answers.
 - A **light/dark button** (stored as `njit-sponsor-theme`, which the survey site can read too, since both share the slyguy7.github.io origin) and a **link preview card** (`assets/og.png`) for Teams, Slack and email.
 
@@ -18,12 +18,20 @@ It uses the survey's fonts (self-hosted in `assets/fonts/`) and colours, follows
 
 ## Files
 
-- `index.html`, `assets/kit.css`, `assets/kit.js`: the page.
+- `index.html`, `assets/kit.css`, `assets/kit.js`, `assets/theme.js`: the page.
 - `404.html`: shown by GitHub Pages for any address that does not exist.
 - `assets/engine.js`: the rules and the link decoder. Based on `assets/readiness.js` in the survey repository, without its renderer.
+- `assets/qr.js`: a small QR code encoder written for this site (byte mode, level M, versions 1 to 10). `tests/qr.test.js` checks it against the QR standard's worked examples and reads every generated code back.
 - `assets/survey.json`, `assets/readiness.json`: **exact copies** of the same files in the survey repository.
 - `check-sync.js`: compares those two copies with the live survey site.
-- `serve.js`: a small local server for trying the page and for the tests.
+- `check-dates.js`: warns when the last key date is two weeks away and fails once every date has passed.
+- `serve.js`: a small local server for trying the page and for the tests. It tells the browser not to cache, so a reload always shows your latest edits.
+
+## Changing the page: raise the version number
+
+`index.html` loads every script and the stylesheet with `?v=N` on the end (for example `assets/kit.js?v=5`). GitHub Pages lets browsers keep files for about 10 minutes, so without the number a visitor could get the new page with an old script.
+
+**Whenever you change any file in `assets/` that ends in `.js` or `.css`, raise `N` by one in `index.html`, on every line that has it, and in the stylesheet link in `404.html`.** A test checks that all the numbers match; it cannot tell whether you forgot to raise them.
 
 ## Keeping in step with the survey
 
@@ -36,6 +44,12 @@ When the survey changes:
 3. Run `npm run check:sync` (should print `ok` twice) and `npm test`.
 
 The **survey-sync** job in GitHub Actions runs the same check on every push and every Monday, and turns red when the copies are out of date.
+
+## Each new semester
+
+The key dates come from `dates` in `readiness.json` (edited in the survey repository). After the last one passes, every kit shows no dates.
+
+The **survey-sync** job also runs `npm run check:dates` every Monday. It shows a warning in the two weeks before the last date and fails once they have all passed. GitHub emails the repository owner when a scheduled run fails, so that email is the reminder. To fix it, add the new semester's dates in the survey repository, then copy `readiness.json` here as above.
 
 ## Run it locally
 

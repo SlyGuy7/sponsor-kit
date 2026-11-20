@@ -39,4 +39,11 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 22
-      - run: npm run check:sync
+      - name: Copies match the live survey
+        if: ${{ !cancelled() }}
+        run: npm run check:sync
+      # Warns two weeks before the last key date and fails once every date has passed,
+      # so the Monday run emails a reminder to add next semester's dates.
+      - name: Key dates are still ahead
+        if: ${{ !cancelled() }}
+        run: npm run check:dates
