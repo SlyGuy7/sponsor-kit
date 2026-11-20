@@ -1,0 +1,26 @@
+name: Tests
+
+# Runs on every push and pull request. GitHub Pages publishes the branch regardless of the result,
+# so check the green tick (or the Actions tab) before sharing a new version of the kit.
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Engine unit tests
+        if: ${{ !cancelled() }}
+        run: npm run test:script
+      - name: Browser tests
+        if: ${{ !cancelled() }}
+        run: npm run test:ui
