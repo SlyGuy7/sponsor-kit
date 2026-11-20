@@ -433,6 +433,18 @@ test('on a desktop there is no Share button, only Copy link', async ({ page }) =
   await expect(page.locator('#copy')).toBeVisible();
 });
 
+test('on a phone, messages sit above the Back to top button instead of covering it', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await open(page);
+  await page.locator('#dates').scrollIntoViewIfNeeded();
+  await expect(page.locator('#toTop')).toHaveClass(/on/);
+  await page.click('#ics');
+  await expect(page.locator('#toast')).toHaveClass(/on/);
+  await page.waitForTimeout(300);
+  const t = await page.locator('#toast').boundingBox(), b = await page.locator('#toTop').boundingBox();
+  expect(t.y + t.height).toBeLessThanOrEqual(b.y);
+});
+
 test('the skip link jumps to the kit', async ({ page }) => {
   await open(page);
   await page.keyboard.press('Tab');
