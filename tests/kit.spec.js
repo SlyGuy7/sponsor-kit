@@ -224,6 +224,134 @@ test('with no saved choice the page follows a dark system setting', async ({ pag
   await expect(page.locator('#theme .i-sun')).toBeVisible();
 });
 
+test('"Email this to my PM" opens a filled-in email with the action, its steps and the kit link', async ({ page }) => {
+  await open(page);
+  const href = await page.locator('#acts .step').first().locator('a.mini').getAttribute('href');
+  expect(href.startsWith('mailto:?subject=')).toBe(true);
+  const q = new URLSearchParams(href.slice('mailto:?'.length));
+  expect(q.get('subject')).toBe('Capstone: Sign the scope document with your PM');
+  expect(q.get('body')).toContain('- Ask your PM for the current scope document.');
+  expect(q.get('body')).toContain('Source: Sponsor Guide, section 6');
+  expect(q.get('body')).toContain('#kit=1_');
+});
+
+test('"Hide finished" hides done actions, is remembered, and printing still shows them', async ({ page }) => {
+  await open(page);
+  const first = page.locator('#acts .step').first();
+  for (const b of await first.locator('.checks input').all()) await b.check();
+  await expect(page.locator('#hideDone')).toHaveText('Hide finished (1)');
+  await page.click('#hideDone');
+  await expect(page.locator('#hideDone')).toHaveAttribute('aria-pressed', 'true');
+  await expect(first).toBeHidden();
+  await page.reload();
+  await expect(page.locator('#acts .step').first()).toBeHidden();
+  await page.emulateMedia({ media: 'print' });
+  await expect(page.locator('#acts .step').first()).toBeVisible();
+});
+
+test('when every step is ticked the kit says so', async ({ page }) => {
+  await open(page, { q8_r2: 'Still not ready' });
+  await expect(page.locator('#allDone')).toBeHidden();
+  for (const b of await page.locator('.checks input').all()) await b.check({ force: true });
+  await expect(page.locator('#allDone')).toBeVisible();
+});
+
+test('"Copy my action list" copies every action with its ticks', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await open(page);
+  await page.locator('#acts .checks input').first().check();
+  await page.click('#copyList');
+  await expect(page.locator('#toast')).toContainText('Action list copied');
+  const text = (await page.evaluate(() => navigator.clipboard.readText())).replace(/\r\n/g, '\n');
+  expect(text).toContain('1. Sign the scope document with your PM');
+  expect(text).toContain('[x] Ask your PM for the current scope document.');
+  expect(text).toContain('[ ] Check that each of those six parts');
+  expect(text).toContain('Kit: ' + page.url());
+});
+
+test('"Clear all ticks" asks first, then clears them', async ({ page }) => {
+  await open(page);
+  await expect(page.locator('#clearTicks')).toBeDisabled();
+  await page.locator('#acts .checks input').first().check();
+  page.once('dialog', d => d.dismiss());
+  await page.click('#clearTicks');
+  await expect(page.locator('#acts .checks input').first()).toBeChecked();
+  page.once('dialog', d => d.accept());
+  await page.click('#clearTicks');
+  await expect(page.locator('#acts .checks input').first()).not.toBeChecked();
+  await page.reload();
+  await expect(page.locator('#progNum')).toHaveText(/^0 of/);
+});
+
+test('each date can be added to the calendar on its own', async ({ page }) => {
+  await open(page);
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.locator('#dateList li').nth(2).locator('.mini-btn').click()]);
+  expect(dl.suggestedFilename()).toBe('capstone-final-capstone-showcase.ics');
+  const text = require('fs').readFileSync(await dl.path(), 'utf8');
+  expect(text.match(/BEGIN:VEVENT/g)).toHaveLength(1);
+  expect(text).toContain('SUMMARY:Capstone: Final Capstone Showcase');
+});
+
+test('"Expand all" opens every next-project item and becomes "Collapse all"', async ({ page }) => {
+  await open(page);
+  await expect(page.locator('#toggleAll')).toHaveText('Expand all');
+  await page.click('#toggleAll');
+  await expect(page.locator('#nextList details:not([open])')).toHaveCount(0);
+  await expect(page.locator('#toggleAll')).toHaveText('Collapse all');
+  await expect(page.locator('#toggleAll')).toHaveAttribute('aria-expanded', 'true');
+  await page.click('#toggleAll');
+  await expect(page.locator('#nextList details[open]')).toHaveCount(0);
+});
+
+test('next-project items and contact emails can be copied as text', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await open(page);
+  await page.locator('#nextList details').first().locator('.mini-btn').click();
+  let text = (await page.evaluate(() => navigator.clipboard.readText())).replace(/\r\n/g, '\n');
+  expect(text.startsWith('Scope document template')).toBe(true);
+  expect(text).toContain('Boundaries\nWhat is in scope');
+  await page.locator('#contactList .mini-btn').click();
+  text = await page.evaluate(() => navigator.clipboard.readText());
+  expect(text).toBe('osama.eljabiri@njit.edu');
+});
+
+test('a return visit points out guide content that changed, until "Got it"', async ({ page }) => {
+  await open(page);
+  await expect(page.locator('#whatsNew')).toBeHidden();                         // first visit: nothing to compare with
+  const key = await page.evaluate(() => Object.keys(localStorage).find(k => k.startsWith('sponsor-kit-seen:')));
+  await page.evaluate(k => { const s = JSON.parse(localStorage.getItem(k)); s['date:Final Capstone Showcase'] = 'old'; s['act:gap-scope-doc'] = 'old'; localStorage.setItem(k, JSON.stringify(s)); }, key);
+  await page.reload();
+  await expect(page.locator('#whatsNew')).toBeVisible();
+  await expect(page.locator('#newCount')).toHaveText('2 items have changed since your last visit:');
+  await expect(page.locator('#newList li')).toHaveText(['Sign the scope document with your PM', 'Final Capstone Showcase']);
+  await expect(page.locator('.upd')).toHaveCount(2);
+  await page.click('#gotIt');
+  await expect(page.locator('#whatsNew')).toBeHidden();
+  await expect(page.locator('.upd')).toHaveCount(0);
+  await page.reload();
+  await expect(page.locator('#kit')).toBeVisible();
+  await expect(page.locator('#whatsNew')).toBeHidden();
+});
+
+test('"Back to top" appears after scrolling and returns to the top', async ({ page }) => {
+  await open(page);
+  await expect(page.locator('#toTop')).not.toHaveClass(/on/);
+  await page.locator('#next').scrollIntoViewIfNeeded();
+  await expect(page.locator('#toTop')).toHaveClass(/on/);
+  await page.click('#toTop');
+  await expect(page.locator('h1')).toBeInViewport();
+  await expect(page.locator('h1')).toBeFocused();
+});
+
+test('link previews: title, description and a 1200x630 image', async ({ page, request }) => {
+  await page.goto('/index.html');
+  await expect(page.locator('meta[property="og:title"]')).toHaveAttribute('content', 'Sponsor readiness kit');
+  await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /readiness kit/);
+  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', 'https://slyguy7.github.io/sponsor-kit/assets/og.png');
+  const png = await (await request.get('/assets/og.png')).body();
+  expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([1200, 630]);
+});
+
 test('the skip link jumps to the kit', async ({ page }) => {
   await open(page);
   await page.keyboard.press('Tab');

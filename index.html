@@ -9,6 +9,16 @@
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#1C1475">
 <title>Your sponsor readiness kit</title>
+<meta name="description" content="A personal readiness kit for NJIT YWCC Capstone sponsors: priority actions, key dates and who to contact, built from the Sponsor Experience Survey.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="NJIT YWCC Capstone">
+<meta property="og:title" content="Sponsor readiness kit">
+<meta property="og:description" content="Priority actions, key dates and who to contact, built from your Sponsor Experience Survey answers.">
+<meta property="og:image" content="https://slyguy7.github.io/sponsor-kit/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Sponsor readiness kit. NJIT YWCC Capstone, Fall 2026.">
+<meta name="twitter:card" content="summary_large_image">
 <script src="assets/theme.js"></script>
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="preload" href="assets/fonts/bricolage-grotesque-var.woff2" as="font" type="font/woff2" crossorigin>
@@ -30,7 +40,7 @@
       </span>
     </div>
     <p class="eye">Sponsor readiness kit</p>
-    <h1>Your readiness kit</h1>
+    <h1 tabindex="-1">Your readiness kit</h1>
     <p class="lede" id="lede">Building your kit&hellip;</p>
     <p class="err" id="err" role="alert" hidden></p>
     <a class="btn red" id="again" href="https://slyguy7.github.io/sponsor-survey/" hidden>Take the survey</a>
@@ -67,23 +77,37 @@
   <main class="main" id="main" tabindex="-1">
     <div id="kit" hidden>
       <p class="printed" id="printed"></p>
+      <div class="news" id="whatsNew" role="status" hidden>
+        <div>
+          <p class="news-k">Updated since your last visit</p>
+          <p id="newCount"></p>
+          <ul id="newList"></ul>
+        </div>
+        <button class="btn line" id="gotIt" type="button">Got it</button>
+      </div>
 
       <section id="actions" aria-labelledby="hActions">
         <div class="sec-head">
           <h2 id="hActions" tabindex="-1">Priority actions</h2>
+          <button class="btn line" id="hideDone" type="button" aria-pressed="false">Hide finished</button>
         </div>
         <p class="sub" id="subActions"></p>
+        <p class="alldone" id="allDone" hidden>Every action is ticked off. Well done. Your PM and Capstone leadership are still there if anything comes up.</p>
         <ol class="steps" id="acts"></ol>
         <details class="more" id="moreWrap" hidden>
           <summary id="moreSum">More for this semester</summary>
           <ol class="steps" id="more"></ol>
         </details>
+        <div class="row-tools">
+          <button class="mini-btn" id="copyList" type="button">Copy my action list</button>
+          <button class="mini-btn" id="clearTicks" type="button">Clear all ticks</button>
+        </div>
       </section>
 
       <section id="dates" aria-labelledby="hDates">
         <div class="sec-head">
           <h2 id="hDates" tabindex="-1">Key dates</h2>
-          <button class="btn line" id="ics" type="button">Add to calendar</button>
+          <button class="btn line" id="ics" type="button">Add all to calendar</button>
         </div>
         <p class="sub">Dates still ahead of today, from the sponsor guide.</p>
         <ol class="dates" id="dateList"></ol>
@@ -101,6 +125,7 @@
       <section id="next" aria-labelledby="hNext">
         <div class="sec-head">
           <h2 id="hNext" tabindex="-1">Next project</h2>
+          <button class="btn line" id="toggleAll" type="button" aria-controls="nextList" aria-expanded="false">Expand all</button>
         </div>
         <p class="sub">Reference material drafted from the Sponsor Guide. Items you said would have helped most are first and open.</p>
         <div class="acc" id="nextList"></div>
@@ -109,9 +134,11 @@
   </main>
 </div>
 
+<button class="totop" id="toTop" type="button">Back to top</button>
+
 <footer class="foot">
   <div class="wrap">
-    <p>Your responses stay in this page's address and are never sent anywhere. Ticked steps are saved only in this browser.</p>
+    <p>Your responses stay in this page's address and are never sent anywhere. Ticks and display choices are saved only in this browser.</p>
     <p>The signed sponsor agreement and the live course schedule take priority over anything shown here.</p>
   </div>
 </footer>
