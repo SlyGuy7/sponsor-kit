@@ -75,10 +75,6 @@ function render(r) {
   if (r.dates.length) r.dates.forEach((d, n) => $('#dateList').append(el('li', { class: n === 0 ? 'next' : '' }, el('b', { text: d.when }), el('span', null, el('span', { class: 't', text: d.title }), el('span', { class: 'd', text: d.detail })))));
   else { $('#dateList').hidden = true; $('#noDates').hidden = false; }
   $('#contactList').append(...contactList(r.contacts));
-  if (r.delivery) {
-    $('#delivery').textContent = 'Noted: you would prefer to receive it as "' + r.delivery.charAt(0).toLowerCase() + r.delivery.slice(1) + '".';
-    $('#delivery').hidden = false;
-  }
   r.kit.forEach(k => {
     const d = el('details', { class: 'item' }, el('summary', null, k.title, k.picked ? el('span', { class: 'tag', text: 'You picked this' }) : null), el('div', null, detail(k), k.contacts ? el('ul', null, contactList(r.contacts)) : null));
     if (k.picked) d.open = true;

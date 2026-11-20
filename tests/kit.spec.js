@@ -9,7 +9,7 @@ const TODAY = new Date('2026-11-19T12:00:00');
 const link = a => '/index.html#kit=' + R.encode(S.questions, a);
 const SAMPLE = {
   q4: 'None, this is my first', q8_r2: 'Still not ready', q8_r3: 'Ready after Oct 8', q8_r6: 'Still not ready',
-  q14: 'I needed help but didn’t know whom to contact', q16: '2', q20: '4',
+  q14: 'I needed help but didn’t know whom to contact', q16: '2', q19: '4',
   q18: 'A scope document template to sign with the Project Manager | A named Operations contact and instructions for getting help'
 };
 
@@ -41,7 +41,7 @@ test('items the sponsor picked come first, open, and are marked', async ({ page 
 });
 
 test('a sponsor with nothing wrong still gets a useful kit', async ({ page }) => {
-  await open(page, { q4: '4 or more', q14: '5', q16: '5', q20: '5' });
+  await open(page, { q4: '4 or more', q14: '5', q16: '5', q19: '5' });
   await expect(page.locator('#subActions')).toContainText('Nothing urgent');
   await expect(page.locator('#sum')).toContainText('0');
   await expect(page.locator('#nextList details.item').first()).toBeVisible();
@@ -96,7 +96,7 @@ test('side links move to each section and mark the current one', async ({ page }
 test('the kit link stays in the address after using the side links, so a reload still works', async ({ page }) => {
   await open(page);
   const url = page.url();
-  await page.locator('.side a', { hasText: 'Points of contact' }).click();
+  await page.locator('.side a', { hasText: 'Who to contact' }).click();
   await expect(page.locator('#contacts')).toBeInViewport();
   expect(page.url()).toBe(url);
   await expect(page.locator('#hContacts')).toBeFocused();
@@ -109,16 +109,6 @@ test('pasting a different kit link rebuilds the page', async ({ page }) => {
   await expect(page.locator('#acts .act').first()).toContainText('Sign the scope document');
   await page.evaluate(h => { location.hash = h; }, '#kit=' + R.encode(S.questions, { q8_r4: 'Still not ready' }));
   await expect(page.locator('#acts .act').first()).toContainText('Get data and documents');
-});
-
-test('the delivery preference is noted', async ({ page }) => {
-  await open(page, { ...SAMPLE, q19: 'A 15-minute live walkthrough' });
-  await expect(page.locator('#delivery')).toHaveText('Noted: you would prefer to receive it as "a 15-minute live walkthrough".');
-});
-
-test('"No preference" adds no delivery note', async ({ page }) => {
-  await open(page, { ...SAMPLE, q19: 'No preference' });
-  await expect(page.locator('#delivery')).toBeHidden();
 });
 
 test('printouts carry the date and the link to reopen the kit; the stamp is hidden on screen', async ({ page }) => {

@@ -40,11 +40,10 @@
       .map((k, idx) => Object.assign({}, k, { idx, picked: (k.picks || []).some(p => chosen.includes(p)) }))
       .sort((x, y) => Number(y.picked) - Number(x.picked) || x.idx - y.idx)
       .map(k => Object.assign(k, { top: k.picked }));
-    const pref = val(a, 'q19');                  // question 19: how the sponsor would prefer to receive the kit
     return {
       fix: by('fix'), refresh: by('refresh'), info: by('info'),
       dates: content.dates.filter(d => d.until >= day),
-      kit, delivery: pref && pref !== 'No preference' ? pref : '',
+      kit,
       contacts: content.contacts
     };
   }

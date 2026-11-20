@@ -56,7 +56,6 @@ details.item p,details.item li,details.more p,details.more li{font-size:.9375rem
 .dates .t{font-weight:600;color:var(--ink);display:block}
 .dates .d{color:var(--text)}
 h2[tabindex]:focus{outline:none}
-.note{margin:0 0 12px;padding:10px 14px;border-radius:8px;background:var(--wash);color:var(--text);font-size:.9375rem;max-width:62ch}
 .printed{display:none}
 .contact{background:var(--navy);color:#fff;border-radius:10px;padding:18px 20px}
 .contact h2{color:#fff}
