@@ -14,11 +14,16 @@
   --body:'Instrument Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
   color-scheme:light dark;
 }
+/* Dark colours: follow the system unless the theme button chose light or dark (data-theme on <html>, set by theme.js). */
 @media (prefers-color-scheme:dark){
-  :root{--paper:#0E0A33; --surface:#171255; --mist:#1F1A66; --ink:#EEEBFF; --text:#D6D3F7; --muted:#BDB9F2;
+  :root:not([data-theme="light"]){--paper:#0E0A33; --surface:#171255; --mist:#1F1A66; --ink:#EEEBFF; --text:#D6D3F7; --muted:#BDB9F2;
     --heading:#D9D5FF; --line:#2E2880; --line-strong:#8A86C9; --soft-red:#3D1033; --red-text:#FF9A9A;
     --ok:#4FD58B; --ok-bg:#103A2A; --doing-bg:#2B22A3; --tick:#8F89FF}
 }
+:root[data-theme="dark"]{--paper:#0E0A33; --surface:#171255; --mist:#1F1A66; --ink:#EEEBFF; --text:#D6D3F7; --muted:#BDB9F2;
+  --heading:#D9D5FF; --line:#2E2880; --line-strong:#8A86C9; --soft-red:#3D1033; --red-text:#FF9A9A;
+  --ok:#4FD58B; --ok-bg:#103A2A; --doing-bg:#2B22A3; --tick:#8F89FF; color-scheme:dark}
+:root[data-theme="light"]{color-scheme:light}
 
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -40,6 +45,14 @@ a{color:inherit}
 .btn.red:hover{background:var(--red-deep)}
 .btn.ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.55)}
 .btn.ghost:hover{background:rgba(255,255,255,.1);border-color:#fff}
+.btn.icon{width:44px;padding:0;flex:none!important}
+.btn.icon svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.btn.icon .i-sun,[data-theme="dark"] .btn.icon .i-moon{display:none}
+[data-theme="dark"] .btn.icon .i-sun{display:block}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .btn.icon .i-moon{display:none}
+  :root:not([data-theme="light"]) .btn.icon .i-sun{display:block}
+}
 .btn.line{background:transparent;color:var(--heading);border-color:var(--line-strong)}
 .btn.line:hover{background:var(--mist);border-color:var(--heading)}
 
@@ -197,7 +210,7 @@ blockquote{margin:6px 0 10px;padding:14px 18px;border-left:3px solid var(--blue)
 
 /* ---------- print ---------- */
 @media print{
-  :root{--paper:#fff;--surface:#fff;--mist:#f3f3f3;--ink:#000;--text:#222;--muted:#555;--heading:#1C1475;--line:#ccc}
+  :root,:root[data-theme],:root:not([data-theme="light"]){--paper:#fff;--surface:#fff;--mist:#f3f3f3;--ink:#000;--text:#222;--muted:#555;--heading:#1C1475;--line:#ccc;--line-strong:#7C79A3;--soft-red:#FFE9E9;--red-text:#9E0000;--ok:#0F7A3E;--ok-bg:#E3F4EA;--doing-bg:#E6E4FA;--tick:#1C1475;color-scheme:light}
   body{font-size:.875rem}
   .hero{background:#fff;color:#000;padding-bottom:12px;border-bottom:2px solid #1C1475}
   .top{padding:0 0 16px}

@@ -192,6 +192,38 @@ test('pasting a different kit link rebuilds the page', async ({ page }) => {
   await expect(page.locator('#acts .step').first()).toContainText('Get data and documents');
 });
 
+test('the theme button switches light and dark, remembers it, and overrides the system', async ({ page }) => {
+  const bg = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  await open(page);
+  expect(await bg()).toBe('rgb(255, 255, 255)');
+  await expect(page.locator('#theme')).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.locator('#theme .i-moon')).toBeVisible();
+  await page.click('#theme');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(page.locator('#theme')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#theme .i-sun')).toBeVisible();
+  expect(await bg()).toBe('rgb(14, 10, 51)');
+  // remembered, and applied before the page is drawn (theme.js runs in <head>)
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  // a light choice wins over a dark system setting
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.click('#theme');
+  expect(await bg()).toBe('rgb(255, 255, 255)');
+  // printing is always light
+  await page.click('#theme');
+  await page.emulateMedia({ media: 'print' });
+  expect(await bg()).toBe('rgb(255, 255, 255)');
+});
+
+test('with no saved choice the page follows a dark system setting', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await open(page);
+  await expect(page.locator('html')).not.toHaveAttribute('data-theme', /./);
+  await expect(page.locator('#theme')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#theme .i-sun')).toBeVisible();
+});
+
 test('the skip link jumps to the kit', async ({ page }) => {
   await open(page);
   await page.keyboard.press('Tab');

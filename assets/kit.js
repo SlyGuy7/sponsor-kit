@@ -239,6 +239,18 @@ $('#print').addEventListener('click', () => {
 $('#copy').addEventListener('click', () => {
   copyText(location.href).then(() => toast('Link copied. It holds no names or emails, so it is safe to share.'), () => toast('Could not copy. Copy the address from the address bar instead.'));
 });
+// Light or dark: the button overrides the system setting and remembers the choice in this browser.
+const darkQuery = matchMedia('(prefers-color-scheme: dark)');
+const theme = () => document.documentElement.dataset.theme || (darkQuery.matches ? 'dark' : 'light');
+const syncTheme = () => $('#theme').setAttribute('aria-pressed', String(theme() === 'dark'));
+$('#theme').addEventListener('click', () => {
+  const next = theme() === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = next;
+  try { localStorage.setItem('sponsor-kit-theme', next); } catch (e) { /* not remembered, still switched */ }
+  syncTheme();
+});
+darkQuery.addEventListener('change', syncTheme);
+syncTheme();
 // A different kit link pasted into the address bar: build that kit instead.
 addEventListener('hashchange', () => { if (location.hash.startsWith('#kit=')) location.reload(); });
 boot();
