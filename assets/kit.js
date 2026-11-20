@@ -15,9 +15,18 @@ const ICONS = {
   key: '<circle cx="8" cy="15" r="4"/><path d="M11 12l8-8M16 7l3 3M14 9l2 2"/>',
   shield: '<path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/>',
   list: '<path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/>',
-  check: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/>'
+  check: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/>',
+  alert: '<path d="M12 4l9 16H3zM12 10v4M12 17h.01"/>',
+  calendar: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>'
 };
-const ICON_FOR = { 'gap-goals': 'target', 'gap-scope-doc': 'doc', 'gap-requirements': 'list', 'gap-data': 'data', 'gap-access': 'key', 'gap-decider': 'person', 'gap-tech': 'person', 'gap-nda': 'shield', 'help-gap': 'chat', 'unhappy-start': 'chat', 'next-easier': 'chat' };
+const ICON_FOR = {
+  'gap-goals': 'target', 'gap-scope-doc': 'doc', 'gap-requirements': 'list', 'gap-data': 'data', 'gap-access': 'key',
+  'gap-decider': 'person', 'gap-contact': 'person', 'gap-nda': 'shield', 'blocked-now': 'alert', 'scope-undocumented': 'doc',
+  'rhythm-gap': 'calendar', 'help-gap': 'chat', 'unhappy-start': 'chat',
+  'rf-weekly': 'calendar', 'rf-feedback': 'chat', 'rf-scope': 'doc', 'rf-stretch': 'target', 'rf-concerns': 'chat',
+  'rf-events': 'calendar', 'rf-eval': 'list', 'guide-missing': 'doc', 'scope-unsure': 'doc', 'rhythm-light': 'calendar',
+  'next-easier': 'chat'
+};
 
 function el(tag, attrs) {
   const e = document.createElement(tag);
@@ -66,12 +75,17 @@ function render(r) {
   if (r.dates.length) r.dates.forEach((d, n) => $('#dateList').append(el('li', { class: n === 0 ? 'next' : '' }, el('b', { text: d.when }), el('span', null, el('span', { class: 't', text: d.title }), el('span', { class: 'd', text: d.detail })))));
   else { $('#dateList').hidden = true; $('#noDates').hidden = false; }
   $('#contactList').append(...contactList(r.contacts));
+  if (r.delivery) {
+    $('#delivery').textContent = 'Noted: you would prefer to receive it as "' + r.delivery.charAt(0).toLowerCase() + r.delivery.slice(1) + '".';
+    $('#delivery').hidden = false;
+  }
   r.kit.forEach(k => {
     const d = el('details', { class: 'item' }, el('summary', null, k.title, k.picked ? el('span', { class: 'tag', text: 'You picked this' }) : null), el('div', null, detail(k), k.contacts ? el('ul', null, contactList(r.contacts)) : null));
     if (k.picked) d.open = true;
     $('#nextList').append(d);
   });
   $('#lede').textContent = 'Prepared from your survey responses and the Capstone Sponsor Guide. It lists what to act on first, the dates still ahead, and who to contact.';
+  $('#printed').textContent = 'Prepared ' + new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) + '. Reopen this kit at ' + location.href;
   $('#kit').hidden = false; $('#side').hidden = false; $('#print').hidden = false;
 }
 
@@ -87,11 +101,18 @@ async function boot() {
     const answers = Readiness.decode(survey.questions, m[1]);
     if (!Object.keys(answers).length) return fail(MISSING);
     render(Readiness.build(content, answers, new Date()));
-    document.title = 'Your sponsor readiness kit';
     const links = [...document.querySelectorAll('.side a')];
     const secs = links.map(a => document.getElementById(a.getAttribute('href').slice(1)));
     const mark = id => links.forEach(a => { if (a.getAttribute('href') === '#' + id) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current'); });
     mark('actions');
+    // Scroll without touching the address, so the #kit= link survives for reloading, bookmarking or sharing.
+    links.forEach((a, n) => a.addEventListener('click', e => {
+      e.preventDefault();
+      const smooth = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+      secs[n].scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
+      secs[n].querySelector('h2').focus({ preventScroll: true });
+      mark(secs[n].id);
+    }));
     if ('IntersectionObserver' in window) {
       const io = new IntersectionObserver(es => { const v = es.filter(e => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0]; if (v) mark(v.target.id); }, { rootMargin: '0px 0px -60% 0px' });
       secs.forEach(s => io.observe(s));
@@ -106,5 +127,7 @@ $('#print').addEventListener('click', () => {
   addEventListener('afterprint', undo);
   window.print();
 });
+// A different kit link pasted into the address bar: build that kit instead.
+addEventListener('hashchange', () => { if (location.hash.startsWith('#kit=')) location.reload(); });
 boot();
 })();

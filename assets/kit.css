@@ -12,11 +12,11 @@ body{margin:0;background:#fff;color:var(--ink);font-family:var(--sans);font-size
 :focus-visible{outline:3px solid #1c6ef2;outline-offset:3px}
 .shell{display:grid;grid-template-columns:200px minmax(0,1fr);max-width:1100px;margin:0 auto}
 .side{background:var(--wash);border-right:1px solid var(--line);padding:20px 12px;display:flex;flex-direction:column;gap:2px;position:sticky;top:0;align-self:start;min-height:100%}
-.side[hidden]{display:none}
 .side a{color:var(--text);padding:9px 12px;border-radius:6px;text-decoration:none;font-size:.9375rem;display:block}
 .side a:hover{background:#fff;color:var(--navy)}
 .side a[aria-current="true"]{background:#fff;color:var(--navy);font-weight:600;box-shadow:inset 3px 0 0 var(--red)}
 .main{grid-column:2;padding:clamp(20px,3vw,36px) clamp(18px,3vw,36px) 36px;min-width:0}
+.main.solo{grid-column:auto;max-width:1100px;margin:0 auto}
 .eye{font-size:.75rem;letter-spacing:.12em;color:var(--red);text-transform:uppercase;font-weight:700;margin:0 0 6px}
 h1{font-family:var(--serif);font-size:clamp(1.9rem,4vw,2.6rem);font-weight:700;color:var(--navy);margin:0 0 8px;line-height:1.12}
 .lede{margin:0 0 18px;color:var(--text);max-width:60ch;font-size:1.0625rem}
@@ -35,7 +35,7 @@ h3{font-size:1.0625rem;color:var(--navy);margin:0 0 4px;font-weight:600}
 .ic{width:44px;height:44px;border-radius:10px;background:#eef1f8;display:flex;align-items:center;justify-content:center}
 .ic svg{width:24px;height:24px;stroke:var(--navy);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 .act p,.act li{margin:0 0 6px;color:var(--text);font-size:.9375rem}
-.act ul,.item ul{margin:4px 0 6px;padding-left:20px}
+.act ul,.item ul,.more ul{margin:4px 0 6px;padding-left:20px}
 .src{font-size:.8125rem!important;color:var(--muted)!important}
 .tag{display:inline-block;font-size:.6875rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--navy);background:#eef1f8;border-radius:99px;padding:2px 9px;margin-left:8px;vertical-align:2px}
 details.more,details.item{border:1px solid var(--line);border-radius:10px;margin-top:12px;background:#fff}
@@ -43,7 +43,8 @@ details>summary{cursor:pointer;padding:12px 16px;font-family:var(--serif);font-w
 details>div{padding:0 16px 14px}
 details.item>summary{font-family:var(--sans);font-weight:600;font-size:1rem}
 details.item p,details.item li,details.more p,details.more li{font-size:.9375rem;color:var(--text);margin:0 0 6px}
-.item .block{margin:12px 0 0;padding-top:12px;border-top:1px solid var(--line)}
+.more .block{margin:12px 0 0;padding-top:12px;border-top:1px solid var(--line)}
+.more .block:first-child{margin-top:0;padding-top:0;border-top:0}
 .item dt{font-weight:600;color:var(--navy);margin-top:8px}
 .item dd{margin:2px 0 0;color:var(--text);font-size:.9375rem}
 .item blockquote{margin:8px 0;padding:8px 12px;border-left:3px solid var(--line);background:var(--wash);color:var(--text);font-size:.9375rem}
@@ -54,6 +55,9 @@ details.item p,details.item li,details.more p,details.more li{font-size:.9375rem
 .dates li.next{background:#fff5f5}
 .dates .t{font-weight:600;color:var(--ink);display:block}
 .dates .d{color:var(--text)}
+h2[tabindex]:focus{outline:none}
+.note{margin:0 0 12px;padding:10px 14px;border-radius:8px;background:var(--wash);color:var(--text);font-size:.9375rem;max-width:62ch}
+.printed{display:none}
 .contact{background:var(--navy);color:#fff;border-radius:10px;padding:18px 20px}
 .contact h2{color:#fff}
 .contact .sub{color:#d9e1f2}
@@ -64,8 +68,8 @@ details.item p,details.item li,details.more p,details.more li{font-size:.9375rem
 .contact :focus-visible{outline-color:#fff}
 .foot{border-top:1px solid var(--line);padding:14px clamp(16px,3vw,32px);font-size:.8125rem;color:var(--muted);max-width:1100px;margin:0 auto}
 @media(max-width:760px){
-    .shell{grid-template-columns:1fr}
-    .main{grid-column:1}
+  .shell{grid-template-columns:1fr}
+  .main{grid-column:1}
   .side{position:static;flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);padding:8px 12px;min-height:0}
   .side a{white-space:nowrap}
   .dates li{grid-template-columns:1fr;gap:2px}
@@ -75,7 +79,10 @@ details.item p,details.item li,details.more p,details.more li{font-size:.9375rem
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 @media print{
-  .bar button,.side,.again,#again{display:none!important}
+  .bar button,.side,#again{display:none!important}
+  .printed{display:block;margin:0 0 16px;font-size:.8125rem;color:#333;overflow-wrap:anywhere}
+  .act,.more .block,details.item,.dates li{break-inside:avoid-page}
+  h2,h3{break-after:avoid}
   .bar{background:#fff;color:#000;padding:0 0 8px}
   .contact{background:#fff;color:#000;border:1px solid #999}
   .contact h2,.contact b,.contact a,.contact li,.contact .sub{color:#000}
