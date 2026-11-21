@@ -9,8 +9,8 @@ const TODAY = new Date('2026-11-19T12:00:00');
 const link = a => '/index.html#kit=' + R.encode(S.questions, a);
 const SAMPLE = {
   q4: 'None, this is my first', q8_r2: 'Still not ready', q8_r3: 'Ready after Oct 8', q8_r6: 'Still not ready',
-  q14: 'I needed help but didn’t know whom to contact', q16: '2', q19: '4',
-  q18: 'A scope document template to sign with the Project Manager | A named Operations contact and instructions for getting help'
+  q14: 'I needed help but didn’t know whom to contact', q16: '2', q18: '4',
+  q19: 'A scope document template to sign with the Project Manager | A named Operations contact and instructions for getting help'
 };
 const axe = async page => (await new AxeBuilder({ page }).analyze()).violations.map(v => v.id + ': ' + v.help + ' ' + v.nodes.map(n => n.target).join(', '));
 
@@ -49,7 +49,7 @@ test('items the sponsor picked come first, open, and are marked', async ({ page 
 });
 
 test('a sponsor with nothing wrong still gets a useful kit', async ({ page }) => {
-  await open(page, { q4: '4 or more', q14: '5', q16: '5', q19: '5' });
+  await open(page, { q4: '4 or more', q14: '5', q16: '5', q18: '5' });
   await expect(page.locator('#subActions')).toContainText('Nothing urgent');
   await expect(page.locator('#fixNum')).toHaveText('0');
   await expect(page.locator('#nextList details.item').first()).toBeVisible();
