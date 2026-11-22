@@ -195,21 +195,21 @@ test('pasting a different kit link rebuilds the page', async ({ page }) => {
 test('the theme button switches light and dark, remembers it, and overrides the system', async ({ page }) => {
   const bg = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
   await open(page);
-  expect(await bg()).toBe('rgb(255, 255, 255)');
+  expect(await bg()).toBe('rgb(246, 245, 241)');                // warm paper
   await expect(page.locator('#theme')).toHaveAttribute('aria-pressed', 'false');
   await expect(page.locator('#theme .i-moon')).toBeVisible();
   await page.click('#theme');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await expect(page.locator('#theme')).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('#theme .i-sun')).toBeVisible();
-  expect(await bg()).toBe('rgb(14, 10, 51)');
+  expect(await bg()).toBe('rgb(12, 11, 34)');
   // remembered, and applied before the page is drawn (theme.js runs in <head>)
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   // a light choice wins over a dark system setting
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.click('#theme');
-  expect(await bg()).toBe('rgb(255, 255, 255)');
+  expect(await bg()).toBe('rgb(246, 245, 241)');
   // printing is always light
   await page.click('#theme');
   await page.emulateMedia({ media: 'print' });
@@ -352,13 +352,15 @@ test('link previews: title, description and a 1200x630 image', async ({ page, re
   expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([1200, 630]);
 });
 
-test('every script and stylesheet carries the same ?v= version, so browsers never mix old and new files', async () => {
-  const html = require('fs').readFileSync(require('path').join(__dirname, '..', 'index.html'), 'utf8');
+test('every script, stylesheet and data file carries a version tag from its contents, so browsers never mix old and new files', async () => {
+  const fs = require('fs'), path = require('path');
+  const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
   const refs = [...html.matchAll(/(?:src|href)="(assets\/[^"]+\.(?:js|css)[^"]*)"/g)].map(m => m[1]);
   expect(refs.length).toBe(5);
-  const versions = new Set(refs.map(r => (/\?v=(\d+)$/.exec(r) || [])[1]));
-  expect([...versions].every(Boolean)).toBe(true);
-  expect(versions.size).toBe(1);
+  expect(refs.every(r => /\?v=[0-9a-f]{10}$/.test(r))).toBe(true);
+  // the tags must match the current files: run "npm run stamp" after changing any of them
+  const run = require('child_process').spawnSync(process.execPath, [path.join(__dirname, '..', 'scripts', 'stamp.js'), '--check'], { encoding: 'utf8' });
+  expect(run.status, run.stderr).toBe(0);
 });
 
 for (const [day, label] of [['2026-12-03', 'In 2 days'], ['2026-12-04', 'Tomorrow'], ['2026-12-05', 'Today']]) {
@@ -487,7 +489,7 @@ test('the missing-link page passes the accessibility scan', async ({ page }) => 
 test('the 404 page is styled, accessible and leads to the survey', async ({ page }) => {
   await page.goto('/sponsor-kit/404.html');
   await expect(page.locator('h1')).toHaveText('That page does not exist');
-  await expect(page.locator('.hero')).toHaveCSS('background-color', 'rgb(28, 20, 117)');   // kit.css loaded from the Pages path
+  await expect(page.locator('h1')).toHaveCSS('color', 'rgb(28, 20, 117)');   // kit.css loaded from the Pages path (navy headline)
   await expect(page.locator('a.btn')).toHaveAttribute('href', 'https://slyguy7.github.io/sponsor-survey/');
   expect(await axe(page)).toEqual([]);
 });

@@ -5,11 +5,12 @@
   "description": "Sponsor readiness kit: a static page that builds a kit from the link at the end of the sponsor survey",
   "scripts": {
     "serve": "node serve.js 4173",
-    "test": "node --test tests/engine.test.js tests/qr.test.js && playwright test",
+    "test": "node scripts/stamp.js --check && node --test tests/engine.test.js tests/qr.test.js && playwright test",
     "test:ui": "playwright test",
-    "test:script": "node --test tests/engine.test.js tests/qr.test.js",
+    "test:script": "node scripts/stamp.js --check && node --test tests/engine.test.js tests/qr.test.js",
     "check:sync": "node check-sync.js",
-    "check:dates": "node check-dates.js"
+    "check:dates": "node check-dates.js",
+    "stamp": "node scripts/stamp.js"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",

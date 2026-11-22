@@ -353,7 +353,7 @@ async function boot() {
   const m = /^#kit=(1_[0-9a-zx._-]*)$/.exec(location.hash);
   if (!m) return fail(MISSING);
   try {
-    const [survey, content] = await Promise.all([load('assets/survey.json'), load('assets/readiness.json')]);
+    const [survey, content] = await Promise.all([load('assets/survey.json?v=17d33fc0b7'), load('assets/readiness.json?v=463ac718df')]);
     const answers = Readiness.decode(survey.questions, m[1]);
     if (!Object.keys(answers).length) return fail(MISSING);
     CODE = m[1];
