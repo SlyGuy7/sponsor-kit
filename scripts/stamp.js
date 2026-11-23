@@ -20,7 +20,7 @@ const digest = s => crypto.createHash('sha256').update(s.replace(/\r\n/g, '\n'))
 const STEPS = [
   ['assets/kit.js', ['assets/survey.json', 'assets/readiness.json']],
   ['index.html', ['assets/theme.js', 'assets/kit.css', 'assets/engine.js', 'assets/qr.js', 'assets/kit.js']],
-  ['404.html', ['assets/kit.css']],
+  ['404.html', ['assets/theme.js', 'assets/kit.css']],
 ];
 
 const pending = {};                     // file -> new text, so --check never writes

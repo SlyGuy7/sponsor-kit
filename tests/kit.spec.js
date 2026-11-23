@@ -107,6 +107,8 @@ test('Add to calendar downloads a valid calendar file with the dates ahead', asy
   expect(text.startsWith('BEGIN:VCALENDAR\r\n')).toBe(true);
   expect(text.trim().endsWith('END:VCALENDAR')).toBe(true);
   expect(text.match(/BEGIN:VEVENT/g)).toHaveLength(4);
+  // every line fits the 75-byte limit, even with characters such as ’ that take 3 bytes
+  for (const line of text.split('\r\n')) expect(Buffer.byteLength(line, 'utf8'), line).toBeLessThanOrEqual(75);
   expect(text).toContain('DTSTART;VALUE=DATE:20261205');
   expect(text).toContain('DTEND;VALUE=DATE:20261206');
   expect(text).toContain('SUMMARY:Capstone: Final Capstone Showcase');
@@ -123,7 +125,7 @@ test('Copy link copies the kit link and says so', async ({ page, context }) => {
 });
 
 test('no link, or a damaged one, explains itself and offers the survey', async ({ page }) => {
-  for (const h of ['', '#kit=garbage', '#kit=1_99-1', '#other']) {
+  for (const h of ['', '#kit=garbage', '#kit=2_99-1', '#other']) {
     await page.goto('/index.html' + h);
     await expect(page.locator('#err')).toContainText('missing or damaged');
     await expect(page.locator('#kit')).toBeHidden();
@@ -160,7 +162,7 @@ test('Print opens every section first, then closes them again', async ({ page })
 test('printouts carry the date and the link to reopen the kit, without buttons', async ({ page }) => {
   await open(page);
   await expect(page.locator('#printed')).toBeHidden();
-  await expect(page.locator('#printed')).toContainText('#kit=1_');
+  await expect(page.locator('#printed')).toContainText('#kit=2_');
   await page.emulateMedia({ media: 'print' });
   await expect(page.locator('#printed')).toBeVisible();
   await expect(page.locator('#printed')).toContainText('Prepared November 19, 2026');
@@ -232,7 +234,7 @@ test('"Email this to my PM" opens a filled-in email with the action, its steps a
   expect(q.get('subject')).toBe('Capstone: Sign the scope document with your PM');
   expect(q.get('body')).toContain('- Ask your PM for the current scope document.');
   expect(q.get('body')).toContain('Source: Sponsor Guide, section 6');
-  expect(q.get('body')).toContain('#kit=1_');
+  expect(q.get('body')).toContain('#kit=2_');
 });
 
 test('"Hide finished" hides done actions, is remembered, and printing still shows them', async ({ page }) => {
@@ -506,4 +508,31 @@ test('page basics: noindex, strict CSP, self-hosted fonts, no inline scripts or 
   expect(await page.locator('[style]').count()).toBe(0);
   expect(await page.evaluate(async () => { await document.fonts.ready; return document.fonts.check('700 1rem "Bricolage Grotesque"') && document.fonts.check('400 1rem "Instrument Sans"'); })).toBe(true);
   expect(require('fs').readFileSync(require('path').join(__dirname, '..', 'assets', 'kit.css'), 'utf8')).not.toMatch(/font-size:\s*[\d.]+px/);
+});
+
+test('a link made before the question changes says it is out of date and offers the survey', async ({ page }) => {
+  await page.goto('/index.html#kit=1_1-3_4-0_5---1----_8--3----2-_14-x1_16-4_18-1.5_19-x0');
+  await expect(page.locator('#err')).toContainText('earlier version of the survey');
+  await expect(page.locator('#kit')).toBeHidden();
+  await expect(page.locator('#again')).toBeVisible();
+});
+
+test('every "Email this to my PM" link stays short enough for mail apps, and keeps the steps and the kit link', async ({ page }) => {
+  await open(page);
+  await page.locator('#moreWrap summary').click();
+  const hrefs = await page.locator('.step a.mini').evaluateAll(as => as.map(a => a.getAttribute('href')));
+  expect(hrefs.length).toBeGreaterThan(3);
+  for (const h of hrefs) {
+    expect(h.length).toBeLessThanOrEqual(1900);
+    const body = new URLSearchParams(h.slice('mailto:?'.length)).get('body');
+    expect(body).toContain('#kit=2_');
+  }
+});
+
+test('the 404 page follows the saved light or dark choice', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.addInitScript(() => localStorage.setItem('njit-sponsor-theme', '"light"'.slice(1, -1)));
+  await page.goto('/sponsor-kit/404.html');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe('rgb(246, 245, 241)');
 });

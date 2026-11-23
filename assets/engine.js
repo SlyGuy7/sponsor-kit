@@ -52,6 +52,9 @@
      A sponsor's answers are turned into short option codes, such as "5-0123-1" for question 5.
      The codes go after the # in the kit site's address, which a browser never sends to any server.
      No names, emails or free text are included. */
+  // The link format version, the same as in the survey's readiness.js. Links with an older version (1_ until
+  // Nov 2026) were made against different questions, so they are not decoded; the page says they are out of date.
+  const VERSION = '2_';
   const CODED = q => q.n && q.type !== 'text' && q.type !== 'contact';
 
   function encode(questions, a) {
@@ -64,13 +67,13 @@
       else if (q.type === 'grid') { const g = q.rows.map((_, i) => { const j = q.cols.indexOf(val(a, k + '_r' + (i + 1))); return j >= 0 ? String(j) : '-'; }).join(''); if (/\d/.test(g)) v = g; }
       if (v !== '') parts.push(q.n + '-' + v);
     });
-    return '1_' + parts.join('_');
+    return VERSION + parts.join('_');
   }
 
   // Never throws: anything that does not fit the survey is ignored, so a damaged link just gives a shorter kit.
   function decode(questions, code) {
     const out = {}, s = String(code || '');
-    if (s.slice(0, 2) !== '1_') return out;
+    if (s.slice(0, VERSION.length) !== VERSION) return out;
     s.slice(2).split('_').forEach(p => {
       const at = p.indexOf('-'); if (at < 1) return;
       const q = (questions || []).filter(CODED).find(x => String(x.n) === p.slice(0, at)); if (!q) return;
@@ -83,5 +86,5 @@
     return out;
   }
 
-  return { GAP, LOW, matches, build, encode, decode };
+  return { GAP, LOW, VERSION, matches, build, encode, decode };
 });

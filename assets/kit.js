@@ -5,6 +5,7 @@
 'use strict';
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
+const OUTDATED = 'This kit link was made with an earlier version of the survey, whose questions have since changed, so it cannot be read reliably. Take the survey again for an up-to-date kit.';
 const MISSING = 'This kit link is missing or damaged, so there is nothing to build. Take the survey and your kit will appear when you finish.';
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const DAY = 86400000;
@@ -66,7 +67,19 @@ function download(name, text) {
 // A calendar file (RFC 5545) with each date as an all-day event on its last day.
 function icsFile(dates) {
   const esc = s => String(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
-  const fold = line => { const out = []; let s = line; while (s.length > 74) { out.push(s.slice(0, 74)); s = ' ' + s.slice(74); } out.push(s); return out.join('\r\n'); };
+  // Lines may be at most 75 octets (bytes in UTF-8, so ’ or – count as 3), folded with a leading space.
+  // Whole characters are kept together, so a fold never splits one.
+  const bytes = c => new TextEncoder().encode(c).length;
+  const fold = line => {
+    const out = []; let cur = '', size = 0;
+    for (const ch of line) {
+      const b = bytes(ch);
+      if (size + b > 75) { out.push(cur); cur = ' '; size = 1; }
+      cur += ch; size += b;
+    }
+    out.push(cur);
+    return out.join('\r\n');
+  };
   const ymd = d => d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0');
   const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
   const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//NJIT YWCC Capstone//Sponsor readiness kit//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:Capstone sponsor dates'];
@@ -97,8 +110,20 @@ function itemText(item) {
   return out.join('\n').trim();
 }
 // A ready-to-send email about one action. No recipient is filled in: the kit never knows the PM's address.
-const mailto = item => 'mailto:?subject=' + encodeURIComponent('Capstone: ' + item.title) +
-  '&body=' + encodeURIComponent(itemText(item) + '\n\nFrom my sponsor readiness kit: ' + location.href);
+// Some mail apps (classic Outlook on Windows among them) drop or cut mailto links over about 2,000 characters,
+// so a long action falls back to its title, steps and source, with the kit link for the full text.
+const MAILTO_MAX = 1900;
+function mailto(item) {
+  const link = '\n\nFrom my sponsor readiness kit: ' + location.href;
+  const make = body => 'mailto:?subject=' + encodeURIComponent('Capstone: ' + item.title) + '&body=' + encodeURIComponent(body + link);
+  const full = make(itemText(item));
+  if (full.length <= MAILTO_MAX) return full;
+  const short = [item.title, ''];
+  if (item.steps && item.steps.length) short.push(...item.steps.map(s => '- ' + s), '');
+  if (item.source) short.push('Source: ' + item.source, '');
+  short.push('The full explanation is in the kit (link below).');
+  return make(short.join('\n'));
+}
 
 function actionListText(prio) {
   const t = loadTicks();
@@ -350,8 +375,9 @@ function sideNav() {
 }
 
 async function boot() {
-  const m = /^#kit=(1_[0-9a-zx._-]*)$/.exec(location.hash);
+  const m = /^#kit=([0-9]+_[0-9a-zx._-]*)$/.exec(location.hash);
   if (!m) return fail(MISSING);
+  if (!m[1].startsWith(Readiness.VERSION)) return fail(OUTDATED);
   try {
     const [survey, content] = await Promise.all([load('assets/survey.json?v=17d33fc0b7'), load('assets/readiness.json?v=463ac718df')]);
     const answers = Readiness.decode(survey.questions, m[1]);
@@ -379,7 +405,7 @@ $('#share').addEventListener('click', () => {
 });
 
 // Light or dark: the button overrides the system setting and remembers the choice.
-// The key is shared with the survey site (same origin), so one choice can cover both.
+// The choice applies to this kit site (its pages share the key); the survey follows the system setting.
 const darkQuery = matchMedia('(prefers-color-scheme: dark)');
 const theme = () => document.documentElement.dataset.theme || (darkQuery.matches ? 'dark' : 'light');
 const syncTheme = () => $('#theme').setAttribute('aria-pressed', String(theme() === 'dark'));
