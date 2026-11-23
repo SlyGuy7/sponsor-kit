@@ -39,7 +39,7 @@ The Fall 2026 NJIT YWCC Capstone Operations Team: **Eugene Amparbeng, Mariah Tor
 - **Copy link** (on phones and tablets, **Share**, which opens the device's share sheet) and **Print or save as PDF**, which opens every section first. The printout carries the date, the link and a QR code that reopens the kit on a phone.
 - Sharing and tools: **Email this to my PM** on each action, **Copy my action list**, **Clear all ticks**, **Hide finished**, **Expand all**, **Copy text** on reference items and **Copy** next to emails.
 - **Updated since your last visit**: when the guide content (`readiness.json`) changes, a returning sponsor sees which actions, dates or items changed. Only a fingerprint of the content is stored, never answers.
-- A **light/dark button** (stored as `njit-sponsor-theme`, which the survey site can read too, since both share the slyguy7.github.io origin) and a **link preview card** (`assets/og.png`) for Teams, Slack and email.
+- A **light/dark button** (stored as `njit-sponsor-theme`; it applies to the kit and its 404 page, while the survey follows the device setting) and a **link preview card** (`assets/og.png`) for Teams, Slack and email.
 
 Without a valid link the page explains that and links back to the survey.
 
@@ -76,8 +76,9 @@ When the survey changes:
 
 1. Copy `assets/survey.json` and `assets/readiness.json` from the survey repository into `assets/` here, unchanged.
 2. If the survey's `assets/readiness.js` changed its `build`, `encode` or `decode` functions, make the same change in `assets/engine.js`.
-3. Run `npm run stamp`, then `npm test`.
-4. Merge the survey's pull request first, then this one right after. `npm run check:sync` (should print `ok` twice) confirms the copies match the live survey.
+3. If the survey raised its kit-link `VERSION` (in `readiness.js`), raise `VERSION` in `assets/engine.js` to match.
+4. Run `npm run stamp`, then `npm test`.
+5. Merge the survey's pull request first, then this one right after. `npm run check:sync` (should print `ok` twice) confirms the copies match the live survey.
 
 The **survey-sync** job in GitHub Actions runs the same check on every push and every Monday, and turns red when the copies are out of date. It is not a required check, so it never blocks merging the kit update that fixes it.
 
